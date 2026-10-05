@@ -1,4 +1,175 @@
-const data = {
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configureitor Ruta</title>
+  <style>
+    :root {
+      --navy: #071a2b; --navy2: #0b2c47; --sky: #65d5ff; --blue: #087fb5;
+      --paper: #eef4f7; --panel: #fff; --ink: #132a3b; --muted: #60788a;
+      --line: #cbd9e2; --shadow: 0 12px 34px rgba(7,32,50,.09);
+      --card-border: #d4e0e7; --btn-bg: #fff; --btn-border: #b8cbd7;
+      --btn-hover: #f7fbfd; --dropzone-bg: #f8fbfc; --pos-num-bg: #e8f1f6;
+    }
+    body.dark-theme {
+      --paper: #0b1218; --panel: #131d26; --ink: #dbe4ea; --muted: #8ca0ad;
+      --line: #2c4254; --shadow: 0 12px 34px rgba(0,0,0,.4);
+      --card-border: #2c4254; --btn-bg: #1c2b38; --btn-border: #3d566b;
+      --btn-hover: #263949; --dropzone-bg: #0e171f; --pos-num-bg: #1a2a38;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: Inter, sans-serif; font-size: 16px; }
+    header { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: white; padding: 14px 30px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--sky); }
+    .brand h1 { font-size: 1.35rem; margin: 0; }
+    .brand small { display: block; color: #aec8d8; }
+    .route-tabs { display: flex; background: #061522; padding: 4px; border-radius: 11px; }
+    .route-tab { border: 0; background: transparent; color: #a9c4d5; padding: 10px 20px; border-radius: 8px; font-weight: 800; cursor: pointer; }
+    .route-tab.active { background: white; color: var(--navy); }
+    main { max-width: 1520px; margin: 0 auto; padding: 18px; }
+    .toolbar { display: flex; justify-content: space-between; margin-bottom: 14px; align-items: center; }
+    .btn { border: 1px solid var(--btn-border); background: var(--btn-bg); color: var(--ink); border-radius: 9px; padding: 9px 13px; font-weight: 750; cursor: pointer; }
+    .btn.primary { background: var(--blue); color: white; border-color: var(--blue); }
+    .btn.danger { color: #9a351f; }
+    .app { display: grid; grid-template-columns: 250px 1fr 300px; gap: 14px; align-items: start; }
+    .card { background: var(--panel); border: 1px solid var(--card-border); border-radius: 15px; box-shadow: var(--shadow); overflow: hidden; }
+    .card-head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+    .card-body { padding: 14px; }
+    
+    .volume, .placed {
+      --current-bg: var(--fam-bg, var(--paper));
+      --current-border: var(--fam-border, #8bb1c5);
+      --current-text: var(--fam-text, var(--ink));
+      background: var(--current-bg);
+      border: 1px solid var(--current-border);
+      color: var(--current-text);
+    }
+    .placed { --current-bg: var(--fam-bg, var(--btn-bg)); --current-border: var(--fam-border, #77a6be); }
+    
+    body.dark-theme .volume, body.dark-theme .placed {
+      --current-bg: var(--fam-dbg, var(--paper));
+      --current-border: var(--fam-dborder, #3d566b);
+      --current-text: var(--fam-dtext, var(--ink));
+    }
+
+    .palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 8px; border: 2px dashed transparent; border-radius: 9px; padding: 4px; transition: .15s;}
+    .palette.over { border-color: var(--blue); background: #e7f6fd; }
+    body.dark-theme .palette.over { background: #0b2c47; }
+    
+    .volume { min-height: 44px; border-radius: 9px; font-weight: 850; display: grid; place-items: center; cursor: grab; user-select: none; transition: .15s; }
+    .volume.used { opacity: .25; pointer-events: none; }
+    .volume.selected { border-color: var(--blue) !important; box-shadow: 0 0 0 3px #8edcff55; transform: translateY(-1px); }
+    .volume.dragging { opacity: 0.4; }
+    
+    .positions { padding: 12px; display: grid; gap: 9px; max-height: calc(100vh - 175px); overflow: auto; }
+    .position { display: grid; grid-template-columns: 42px 1fr 116px auto auto; gap: 9px; align-items: center; min-height: 62px; }
+    .pos-num { width: 34px; height: 34px; border-radius: 10px; background: var(--pos-num-bg); display: grid; place-items: center; font-weight: 900; }
+    .dropzone { min-height: 56px; border: 1.5px dashed var(--muted); border-radius: 11px; background: var(--dropzone-bg); padding: 7px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; transition: .15s; cursor: pointer; }
+    .dropzone.over { border-color: var(--blue); background: #e7f6fd; box-shadow: inset 0 0 0 2px #8edcff; }
+    body.dark-theme .dropzone.over { background: #0b2c47; }
+    .dropzone.empty:after { content: 'Arrastra aquí o haz clic'; color: var(--muted); margin: auto; font-size: .82rem; pointer-events: none; }
+    .placed { border-radius: 7px; padding: 7px 9px; font-weight: 850; cursor: grab; }
+    .group-name { min-height: 42px; border-radius: 9px; background: #0b2940; color: white; display: grid; place-items: center; font-weight: 900; text-align: center; }
+    .group-name.unknown { background: #f5e8db; color: #8a4510; }
+    body.dark-theme .group-name.unknown { background: #4a341c; color: #f5e8db; }
+    
+    .action-icon { border: 0; background: transparent; color: var(--muted); font-size: 1.1rem; cursor: pointer; width: 32px; height: 32px; }
+    .result { padding: 18px; background: linear-gradient(145deg, #071a2b, #0d3756); color: white; }
+    .result-code { font-size: 3rem; font-weight: 950; margin: 9px 0 8px; color: var(--sky); }
+    .result.ok .result-code { color: #7bf1bf; }
+    .result.warn .result-code { color: #ffd08a; font-size: 1.5rem; }
+    .groups-list { padding: 14px 16px; }
+    .group-pill { background: var(--pos-num-bg); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; font-weight: 800; font-size: .84rem; display: inline-block; margin: 3px; }
+    .load { border-top: 1px solid var(--line); padding: 14px 16px; }
+    .load select { width: 100%; min-height: 42px; border: 1px solid var(--btn-border); border-radius: 9px; background: var(--btn-bg); padding: 8px; color: var(--ink); margin-bottom: 8px; }
+    .legend { padding: 12px 16px; background: var(--dropzone-bg); border-top: 1px solid var(--line); color: var(--muted); font-size: .77rem; }
+    .select-banner { display: none; margin-bottom: 10px; padding: 8px 12px; background: #e7f6fd; color: #087fb5; font-weight: 700; border-radius: 8px; font-size: .85rem; }
+    body.dark-theme .select-banner { background: #0b2c47; color: #9ec1d5; }
+    .select-banner.active { display: block; }
+
+    /* --- RESPONSIVENESS (MÓVIL Y TABLET) --- */
+    @media (max-width: 1050px) {
+      .app { grid-template-columns: 1fr; gap: 20px; }
+      .positions { max-height: none; overflow: visible; }
+      header { flex-direction: column; gap: 12px; text-align: center; }
+      .toolbar { flex-direction: column; gap: 15px; }
+      .toolbar > div { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+    }
+
+    @media (max-width: 600px) {
+      .position { 
+        display: flex; flex-wrap: wrap; 
+        background: var(--dropzone-bg); 
+        padding: 10px; border-radius: 12px; 
+        border: 1px solid var(--line);
+        gap: 8px;
+      }
+      body.dark-theme .position { background: #0b1218; border-color: #2c4254; }
+      .pos-num { order: 1; flex: 0 0 34px; }
+      .dropzone { order: 2; flex: 1 1 calc(100% - 50px); }
+      .group-name { order: 3; flex: 1 1 100px; }
+      .action-icon[data-clear] { order: 4; flex: 0 0 32px; margin-left: auto; }
+      .action-icon[data-remove] { order: 5; flex: 0 0 32px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div>
+        <h1>Configureitor Ruta</h1>
+        <small>Agrupación visual de posiciones de control</small>
+      </div>
+    </div>
+    <div class="route-tabs">
+      <button class="route-tab active" data-route="R1">Ruta 1</button>
+      <button class="route-tab" data-route="R2">Ruta 2</button>
+    </div>
+  </header>
+  <main>
+    <div class="toolbar">
+      <div style="color:var(--muted)">Arrastra los volúmenes a las casillas o haz clic para seleccionarlos.</div>
+      <div>
+        <button class="btn" id="exportBtn">Exportar</button>
+        <button class="btn primary" id="addPos">+ Posición</button>
+        <button class="btn danger" id="reset">Limpiar</button>
+      </div>
+    </div>
+    <div id="selectBanner" class="select-banner">Volumen seleccionado: <span id="selectedVolText" style="text-decoration: underline;"></span>. Haz clic en una casilla para colocarlo o arrástralo.</div>
+    <div class="app">
+      <section class="card">
+        <div class="card-head"><h2>Volúmenes</h2><span id="availableCount"></span></div>
+        <div class="card-body"><div id="palette" class="palette"></div></div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Posiciones</h2><span id="positionCount"></span></div>
+        <div id="positions" class="positions"></div>
+      </section>
+      <aside class="card">
+        <div id="result" class="result">
+          <div style="font-size:.74rem; color:#9ec1d5; font-weight:800;">CONFIGURACIÓN</div>
+          <div id="resultCode" class="result-code">--</div>
+          <div id="resultState" style="color:#bfd3df; font-size:.86rem;">Distribuye los volúmenes.</div>
+        </div>
+        <div class="groups-list">
+          <h3 style="font-size:.8rem; color:var(--muted); margin:0 0 9px;">AGRUPACIONES</h3>
+          <div id="groupPills"></div>
+        </div>
+        <div class="load">
+          <label style="font-size:.76rem; color:var(--muted); font-weight:800; display:block; margin-bottom:6px;">CARGAR CONFIGURACIÓN</label>
+          <select id="configSelect"></select>
+          <button id="loadConfig" class="btn" style="width:100%">Colocar</button>
+        </div>
+        <div class="legend">Las líneas sin nombre no coinciden con ninguna agrupación.</div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const MAX_POSITIONS = 10;
+    const emptyPositions = () => Array.from({ length: MAX_POSITIONS }, () => []);
+    
+    const data = {
       configs: {
         R1: [
           { code: "1A", sectors: ["R1I"] },
@@ -138,3 +309,373 @@ const data = {
       },
       variants: {}
     };
+
+    let route = 'R1', positions = emptyPositions();
+    let selectedVolume = null, draggedVolume = null;
+    let currentMatch = null, currentNames = [], loadedConfig = null;
+    
+    const $ = s => document.querySelector(s);
+    const $$ = s => [...document.querySelectorAll(s)];
+    const sortKey = a => [...a].sort().join('|');
+    const configs = () => data.configs[route];
+    const volumes = () => data.volumes[route];
+
+    function getVolumeStyle(vol) {
+      const fams = {
+        AS: { b:'#dcfce7', c:'#86efac', t:'#14532d', db:'#064e3b', dc:'#059669', dt:'#a7f3d0' },
+        BL: { b:'#e0f2fe', c:'#7dd3fc', t:'#0c4a6e', db:'#0c4a6e', dc:'#0284c7', dt:'#bae6fd' },
+        DG: { b:'#ffe4e6', c:'#fda4af', t:'#881337', db:'#4c0519', dc:'#e11d48', dt:'#fecdd3' },
+        PA: { b:'#fef3c7', c:'#fcd34d', t:'#78350f', db:'#451a03', dc:'#d97706', dt:'#fde68a' },
+        CJ: { b:'#f3e8ff', c:'#d8b4fe', t:'#4c1d95', db:'#2e1065', dc:'#9333ea', dt:'#e9d5ff' },
+        TZ: { b:'#ffedd5', c:'#fdba74', t:'#7c2d12', db:'#431407', dc:'#ea580c', dt:'#fed7aa' },
+        TL: { b:'#ccfbf1', c:'#5eead4', t:'#134e4a', db:'#042f2e', dc:'#0d9488', dt:'#99f6e4' },
+        ZM: { b:'#f1f5f9', c:'#cbd5e1', t:'#334155', db:'#0f172a', dc:'#475569', dt:'#cbd5e1' },
+        SA: { b:'#e0e7ff', c:'#a5b4fc', t:'#3730a3', db:'#312e81', dc:'#4f46e5', dt:'#c7d2fe' }
+      };
+      
+      let f = null;
+      if (vol.startsWith('AS')) f = fams.AS;
+      else if (vol.startsWith('BL')) f = fams.BL;
+      else if (vol.startsWith('DG')) f = fams.DG;
+      else if (vol.startsWith('PA')) f = fams.PA;
+      else if (vol.startsWith('CJ')) f = fams.CJ;
+      else if (vol === 'TER' || vol === 'ZGZ') f = fams.TZ;
+      else if (vol.startsWith('TL')) f = fams.TL;
+      else if (vol.startsWith('ZM')) f = fams.ZM;
+      else if (vol.startsWith('SA') || vol.startsWith('SL')) f = fams.SA;
+
+      if (!f) return '';
+      return '--fam-bg:' + f.b + '; --fam-border:' + f.c + '; --fam-text:' + f.t + '; --fam-dbg:' + f.db + '; --fam-dborder:' + f.dc + '; --fam-dtext:' + f.dt + ';';
+    }
+
+    function groupCandidates() {
+      const out = [];
+      for (const [name, parts] of Object.entries(data.aggregations[route])) out.push({ name, parts });
+      return out;
+    }
+
+    function getSectorSignatures(sector) {
+      const sigs = [];
+      if (data.aggregations[route][sector]) {
+        sigs.push([...data.aggregations[route][sector]].sort().join(','));
+      }
+      if (sigs.length === 0) sigs.push(sector);
+      return sigs;
+    }
+
+    function calculateState() {
+      const active = positions.filter(p => p.length);
+      currentMatch = null;
+      currentNames = positions.map(() => null);
+      
+      if (active.length === 0) { loadedConfig = null; return; }
+      
+      const activeSigs = active.map(p => [...p].sort().join(','));
+      const activeSortedStr = [...activeSigs].sort().join('|');
+      let possibleMatches = [];
+      
+      for (const c of configs()) {
+        const configPossibilities = [ [] ];
+        for (const s of c.sectors) {
+          const sSigs = getSectorSignatures(s).filter(sig => sig !== ""); 
+          if (sSigs.length === 0) continue; 
+          
+          const nextPoss = [];
+          for (const poss of configPossibilities) {
+            for (const sig of sSigs) { nextPoss.push([...poss, sig]); }
+          }
+          configPossibilities.length = 0;
+          configPossibilities.push(...nextPoss);
+        }
+        
+        for (const poss of configPossibilities) {
+          if (poss.sort().join('|') === activeSortedStr) {
+            possibleMatches.push(c);
+            break;
+          }
+        }
+      }
+      
+      if (possibleMatches.length > 0) {
+        if (loadedConfig && possibleMatches.includes(loadedConfig)) {
+          currentMatch = loadedConfig;
+        } else {
+          possibleMatches.sort((a, b) => Math.abs(a.sectors.length - active.length) - Math.abs(b.sectors.length - active.length));
+          currentMatch = possibleMatches[0];
+        }
+      } else {
+        loadedConfig = null;
+      }
+      
+      const usedSectors = new Set();
+      for (let i = 0; i < positions.length; i++) {
+        const p = positions[i];
+        if (p.length === 0) continue;
+        
+        const sig = [...p].sort().join(',');
+        let foundName = null;
+        
+        if (currentMatch) {
+          for (const s of currentMatch.sectors) {
+            if (usedSectors.has(s)) continue;
+            if (getSectorSignatures(s).includes(sig)) {
+              foundName = s; usedSectors.add(s); break;
+            }
+          }
+        }
+        
+        if (!foundName) {
+          const key = sortKey(p);
+          foundName = groupCandidates().find(x => sortKey(x.parts) === key)?.name || null;
+        }
+        currentNames[i] = foundName;
+      }
+    }
+
+    function used() { 
+      return new Set(positions.flat()); 
+    }
+
+    function place(name, index) {
+      if (!name) return;
+      const next = positions.map(p => p.filter(x => x !== name));
+      if (index >= 0 && index < next.length) {
+        next[index].push(name);
+        next[index].sort();
+      }
+      positions = next;
+      selectedVolume = null;
+      loadedConfig = null; 
+      render();
+    }
+
+    function renderPalette() {
+      const u = used();
+      const buttonsHTML = volumes().map(v => {
+        const isUsed = u.has(v) ? 'used' : '';
+        const isSelected = selectedVolume === v ? 'selected' : '';
+        const draggable = true;
+        return '<button class="volume ' + isUsed + ' ' + isSelected + '" style="' + getVolumeStyle(v) + '" data-volume="' + v + '" draggable="' + draggable + '">' + v + '</button>';
+      }).join('');
+      
+      $('#palette').innerHTML = buttonsHTML;
+      $('#availableCount').textContent = (volumes().length - u.size) + ' disponibles';
+
+      $$('.volume').forEach(el => {
+        el.addEventListener('click', () => {
+          const v = el.dataset.volume;
+          if (u.has(v)) return;
+          selectedVolume = (selectedVolume === v) ? null : v;
+          updateSelectionBanner();
+          renderPalette();
+        });
+
+        el.addEventListener('dragstart', e => {
+          draggedVolume = el.dataset.volume;
+          selectedVolume = null;
+          updateSelectionBanner();
+          e.dataTransfer.setData('text/plain', draggedVolume);
+          el.classList.add('dragging');
+        });
+        el.addEventListener('dragend', el => {
+          el.target.classList.remove('dragging');
+          draggedVolume = null;
+        });
+      });
+    }
+
+    const paletteZone = $('#palette');
+    paletteZone.addEventListener('dragover', e => { e.preventDefault(); paletteZone.classList.add('over'); });
+    paletteZone.addEventListener('dragleave', () => { paletteZone.classList.remove('over'); });
+    paletteZone.addEventListener('drop', e => {
+      e.preventDefault();
+      paletteZone.classList.remove('over');
+      const name = e.dataTransfer.getData('text/plain') || draggedVolume;
+      place(name, -1);
+    });
+
+    function updateSelectionBanner() {
+      const banner = $('#selectBanner');
+      if (selectedVolume) {
+        banner.classList.add('active');
+        $('#selectedVolText').textContent = selectedVolume;
+      } else {
+        banner.classList.remove('active');
+      }
+    }
+
+    function renderPositions() {
+      const htmlParts = positions.map((p, i) => {
+        const name = currentNames[i];
+        const isUnknown = (p.length && !name) ? 'unknown' : '';
+        const groupText = p.length ? (name || 'Sin agrupar') : '--';
+        
+        const buttonsHTML = p.map(v => 
+          '<button class="placed" style="' + getVolumeStyle(v) + '" data-placed="' + v + '" draggable="true" title="Arrastra o haz clic para quitar">' + v + '</button>'
+        ).join('');
+
+        return [
+          '<div class="position">',
+          '  <div class="pos-num">' + (i + 1) + '</div>',
+          '  <div class="dropzone ' + (p.length ? '' : 'empty') + '" data-index="' + i + '">',
+          '    ' + buttonsHTML,
+          '  </div>',
+          '  <div class="group-name ' + isUnknown + '">' + groupText + '</div>',
+          '  <button class="action-icon" data-clear="' + i + '" title="Vaciar">&#129529;</button>',
+          '  <button class="action-icon" data-remove="' + i + '" title="Eliminar">&#10006;</button>',
+          '</div>'
+        ].join('\n');
+      });
+      
+      $('#positions').innerHTML = htmlParts.join('\n');
+
+      $$('.dropzone').forEach(z => {
+        const i = Number(z.dataset.index);
+        z.addEventListener('click', () => {
+          if (selectedVolume) place(selectedVolume, i);
+        });
+        z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('over'); });
+        z.addEventListener('dragleave', () => { z.classList.remove('over'); });
+        z.addEventListener('drop', e => {
+          e.preventDefault();
+          z.classList.remove('over');
+          const name = e.dataTransfer.getData('text/plain') || draggedVolume;
+          place(name, i);
+        });
+      });
+
+      $$('.placed').forEach(el => {
+        el.addEventListener('click', e => {
+          e.stopPropagation();
+          const name = e.currentTarget.dataset.placed;
+          place(name, -1);
+        });
+        el.addEventListener('dragstart', e => {
+          draggedVolume = e.currentTarget.dataset.placed;
+          e.dataTransfer.setData('text/plain', draggedVolume);
+          e.currentTarget.style.opacity = '0.4';
+        });
+        el.addEventListener('dragend', e => { 
+          e.currentTarget.style.opacity = '1'; 
+          draggedVolume = null; 
+        });
+      });
+
+      $$('[data-clear]').forEach(b => b.addEventListener('click', e => {
+        positions[Number(e.currentTarget.dataset.clear)] = []; 
+        loadedConfig = null;
+        render();
+      }));
+
+      $$('[data-remove]').forEach(b => b.addEventListener('click', e => {
+        positions.splice(Number(e.currentTarget.dataset.remove), 1);
+        while (positions.length < MAX_POSITIONS) positions.push([]);
+        loadedConfig = null;
+        render();
+      }));
+
+      $('#positionCount').textContent = positions.length + ' de ' + MAX_POSITIONS;
+    }
+
+    function identify() {
+      const active = positions.filter(p => p.length);
+      const activeNames = currentNames.filter(n => n !== null);
+      const unknown = activeNames.length < active.length;
+      
+      const box = $('#result'), code = $('#resultCode'), state = $('#resultState');
+      box.className = 'result';
+
+      if (currentMatch) {
+        box.classList.add('ok'); 
+        code.textContent = currentMatch.code;
+        state.textContent = currentMatch.sectors.length + ' sectores · Configuración';
+      } else if (active.length) {
+        box.classList.add('warn'); 
+        code.textContent = unknown ? 'INCOMPLETA' : 'SIN COINCIDENCIA';
+        state.textContent = unknown ? 'Hay posiciones cuya combinación no forma una agrupación.' : 'Las agrupaciones no coinciden con una configuración registrada.';
+      } else {
+        code.textContent = '--'; 
+        state.textContent = 'Distribuye los volúmenes.';
+      }
+
+      const pills = currentMatch ? currentMatch.sectors : activeNames;
+      $('#groupPills').innerHTML = pills.map(n => '<span class="group-pill">' + n + '</span>').join('');
+    }
+
+    function renderSelect() {
+      $('#configSelect').innerHTML = configs().map((c, i) => 
+        '<option value="' + i + '">' + c.code + ' - ' + c.sectors.join(' - ') + '</option>'
+      ).join('');
+    }
+
+    function render() {
+      calculateState();
+      renderPalette(); 
+      renderPositions(); 
+      identify(); 
+      updateSelectionBanner();
+      localStorage.setItem('configureitor_pos', JSON.stringify(positions));
+    }
+
+    $('#exportBtn').addEventListener('click', () => {
+      const active = positions.filter(p => p.length);
+      let text = 'Configureitor - ' + route + '\nEstado: ' + $('#resultCode').textContent + '\n\n';
+      
+      if (active.length === 0) {
+        text += 'Sin volúmenes asignados.';
+      } else {
+        active.forEach((p, i) => { 
+          const name = currentNames[i] ? currentNames[i] : 'Incompleta';
+          text += 'Pos. ' + (i + 1) + ': ' + name + ' (' + p.join(', ') + ')\n'; 
+        });
+      }
+      
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = $('#exportBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '¡Copiado!';
+        setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+      });
+    });
+
+    $('#addPos').addEventListener('click', () => { 
+      if (positions.length < MAX_POSITIONS) { positions.push([]); render(); } 
+    });
+    
+    $('#reset').addEventListener('click', () => { 
+      positions = emptyPositions(); 
+      selectedVolume = null; 
+      loadedConfig = null; 
+      render(); 
+    });
+    
+    $('#loadConfig').addEventListener('click', () => {
+      const selectVal = Number($('#configSelect').value);
+      const c = configs()[selectVal];
+      if (!c) return;
+      loadedConfig = c; 
+      positions = c.sectors.map(s => {
+        let parts = data.aggregations[route][s] ? [...data.aggregations[route][s]] : [s];
+        parts.sort();
+        return parts;
+      }).filter(p => p.length > 0); 
+      
+      while (positions.length < MAX_POSITIONS) positions.push([]);
+      selectedVolume = null;
+      render();
+    });
+
+    $$('.route-tab').forEach(b => b.addEventListener('click', e => {
+      route = e.target.dataset.route;
+      positions = emptyPositions();
+      selectedVolume = null;
+      loadedConfig = null;
+      $$('.route-tab').forEach(t => t.classList.toggle('active', t === e.target));
+      renderSelect(); render();
+    }));
+
+    renderSelect(); 
+    render();
+  </script>
+</body>
+</html>
